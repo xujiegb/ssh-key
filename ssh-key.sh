@@ -95,7 +95,7 @@ OSA
 
   if is_linux; then
     if have zenity; then
-      # GNOME常见：zenity
+      # GNOME: zenity
       if [[ -n "${SUDO_USER-}" && "$SUDO_USER" != "root" ]]; then
         result="$(sudo -u "$SUDO_USER" -H env DISPLAY="${DISPLAY-:0}" XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR-}" \
           zenity --file-selection --save --confirm-overwrite --filename="$default_path" --title="$title" 2>/dev/null || true)"
@@ -104,7 +104,7 @@ OSA
       fi
       printf '%s' "$result"; return
     elif have kdialog; then
-      # KDE常见：kdialog
+      # KDE: kdialog
       if [[ -n "${SUDO_USER-}" && "$SUDO_USER" != "root" ]]; then
         result="$(sudo -u "$SUDO_USER" -H env DISPLAY="${DISPLAY-:0}" XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR-}" \
           kdialog --getsavefilename "$default_path" "*" --title "$title" 2>/dev/null || true)"
@@ -161,7 +161,7 @@ set_texts(){
   en)
     MSG_MENU=$'1) Generate key\n2) Derive public key from private key\n3) Exit'
     MSG_CHOICE="Choose an option: "
-    MSG_ALGO=$'Select algorithm:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519'
+    MSG_ALGO=$'Select algorithm:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519\n  5) ECDSA P-256\n  6) ECDSA P-384\n  7) ECDSA P-521\n  8) RSA 8192\n  9) Ed448 (may not be supported)'
     MSG_INPUT_METHOD=$'Input private key by:\n  1) Paste text\n  2) File path (you can drag & drop into terminal)'
     MSG_PASTE="Paste PRIVATE KEY (end with an empty line), then press Enter twice:"
     MSG_PATH="Enter file path: "
@@ -180,7 +180,7 @@ set_texts(){
   zh-CN)
     MSG_MENU=$'1) 生成密钥\n2) 由私钥查询公钥\n3) 退出'
     MSG_CHOICE="请选择："
-    MSG_ALGO=$'选择算法：\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519'
+    MSG_ALGO=$'选择算法：\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519\n  5) ECDSA P-256\n  6) ECDSA P-384\n  7) ECDSA P-521\n  8) RSA 8192\n  9) Ed448（可能不被当前 OpenSSH 支持）'
     MSG_INPUT_METHOD=$'选择私钥输入方式：\n  1) 粘贴文本\n  2) 文件路径（可拖拽到终端）'
     MSG_PASTE="请粘贴【私钥】，以空行结束，然后连续按两次回车："
     MSG_PATH="请输入文件路径："
@@ -199,7 +199,7 @@ set_texts(){
   zh-TW)
     MSG_MENU=$'1) 產生金鑰\n2) 由私鑰查詢公鑰\n3) 離開'
     MSG_CHOICE="請選擇："
-    MSG_ALGO=$'選擇演算法：\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519'
+    MSG_ALGO=$'選擇演算法：\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519\n  5) ECDSA P-256\n  6) ECDSA P-384\n  7) ECDSA P-521\n  8) RSA 8192\n  9) Ed448（可能不被目前 OpenSSH 支援）'
     MSG_INPUT_METHOD=$'選擇私鑰輸入方式：\n  1) 貼上文本\n  2) 檔案路徑（可拖曳至終端）'
     MSG_PASTE="請貼上【私鑰】，以空行結束，然後連按兩次 Enter："
     MSG_PATH="請輸入檔案路徑："
@@ -218,7 +218,7 @@ set_texts(){
   fr)
     MSG_MENU=$'1) Générer une clé\n2) Obtenir la clé publique depuis la clé privée\n3) Quitter'
     MSG_CHOICE="Votre choix : "
-    MSG_ALGO=$'Choisir l’algorithme :\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519'
+    MSG_ALGO=$'Choisir l’algorithme :\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519\n  5) ECDSA P-256\n  6) ECDSA P-384\n  7) ECDSA P-521\n  8) RSA 8192\n  9) Ed448 (peut ne pas être pris en charge)'
     MSG_INPUT_METHOD=$'Saisir la clé privée par :\n  1) Coller le texte\n  2) Chemin de fichier (glisser-déposer possible)'
     MSG_PASTE="Collez la CLÉ PRIVÉE (terminez par une ligne vide), puis Entrée deux fois :"
     MSG_PATH="Saisir le chemin du fichier : "
@@ -237,7 +237,7 @@ set_texts(){
   ru)
     MSG_MENU=$'1) Сгенерировать ключ\n2) Получить публичный ключ из приватного\n3) Выход'
     MSG_CHOICE="Выберите действие: "
-    MSG_ALGO=$'Выберите алгоритм:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519'
+    MSG_ALGO=$'Выберите алгоритм:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519\n  5) ECDSA P-256\n  6) ECDSA P-384\n  7) ECDSA P-521\n  8) RSA 8192\n  9) Ed448 (может не поддерживаться)'
     MSG_INPUT_METHOD=$'Как ввести приватный ключ:\n  1) Вставить текст\n  2) Путь к файлу (можно перетащить в терминал)'
     MSG_PASTE="Вставьте ПРИВАТНЫЙ КЛЮЧ, завершите пустой строкой, затем дважды Enter:"
     MSG_PATH="Введите путь к файлу: "
@@ -256,7 +256,7 @@ set_texts(){
   fa)
     MSG_MENU=$'1) تولید کلید\n2) استخراج کلید عمومی از کلید خصوصی\n3) خروج'
     MSG_CHOICE="گزینه را انتخاب کنید: "
-    MSG_ALGO=$'الگوریتم را انتخاب کنید:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519'
+    MSG_ALGO=$'الگوریتم را انتخاب کنید:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519\n  5) ECDSA P-256\n  6) ECDSA P-384\n  7) ECDSA P-521\n  8) RSA 8192\n  9) Ed448 (ممکن است پشتیبانی نشود)'
     MSG_INPUT_METHOD=$'روش ورود کلید خصوصی:\n  1) چسباندن متن\n  2) مسیر فایل (می‌توانید فایل را به ترمینال بکشید)'
     MSG_PASTE="کلید خصوصی را بچسبانید (با یک خط خالی پایان دهید)، سپس دو بار Enter:"
     MSG_PATH="مسیر فایل را وارد کنید: "
@@ -265,7 +265,7 @@ set_texts(){
     MSG_EXPORT="خروجی با پنجرهٔ «ذخیره»؟ [y/N]: "
     MSG_SAVE_PRIV_TITLE="ذخیرهٔ کلید خصوصی با نام..."
     MSG_SAVE_PUB_TITLE="ذخیرهٔ کلید عمومی با نام..."
-    MSG_SAVE_PATH_PROMPT="مسیر ذخیره را وارد کنید (برای لغو خالی بگذارید): "
+    MSG_SAVE_PATH_PROMPT="مسیر ذخیره را وارد کنید (خالی = لغو): "
     MSG_SAVE_CANCELED="ذخیره لغو شد."
     MSG_EXPORTED_TO="ذخیره شد در:"
     MSG_PRESS_ENTER="برای ادامه Enter را بزنید…"
@@ -275,7 +275,7 @@ set_texts(){
   ja)
     MSG_MENU=$'1) 鍵を生成\n2) 秘密鍵から公開鍵を取得\n3) 終了'
     MSG_CHOICE="番号を選択してください: "
-    MSG_ALGO=$'アルゴリズムを選択:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519'
+    MSG_ALGO=$'アルゴリズムを選択:\n  1) RSA 2048\n  2) RSA 3072\n  3) RSA 4096\n  4) Ed25519\n  5) ECDSA P-256\n  6) ECDSA P-384\n  7) ECDSA P-521\n  8) RSA 8192\n  9) Ed448（非対応の OpenSSH が多い）'
     MSG_INPUT_METHOD=$'秘密鍵の入力方法:\n  1) テキスト貼り付け\n  2) ファイルパス（ターミナルへドラッグ可）'
     MSG_PASTE="【秘密鍵】を貼り付け、空行で終了、Enter を 2 回押してください:"
     MSG_PATH="ファイルパスを入力: "
@@ -304,17 +304,29 @@ generate_key(){
   pubfile="$keyfile.pub"
 
   case "$algo" in
-    1) type="rsa"; bits=2048 ;;
-    2) type="rsa"; bits=3072 ;;
-    3) type="rsa"; bits=4096 ;;
-    4) type="ed25519"; bits="" ;;
+    1) type="rsa";     bits=2048  ;;
+    2) type="rsa";     bits=3072  ;;
+    3) type="rsa";     bits=4096  ;;
+    4) type="ed25519"; bits=""    ;;
+    5) type="ecdsa";   bits=256   ;;  # ECDSA P-256
+    6) type="ecdsa";   bits=384   ;;  # ECDSA P-384
+    7) type="ecdsa";   bits=521   ;;  # ECDSA P-521
+    8) type="rsa";     bits=8192  ;;  # RSA-8192
+    9) type="ed448";   bits=""    ;;  # Ed448 (may fail if unsupported)
     *) echo "$MSG_INVALID"; return ;;
   esac
 
-  if [[ "$type" == "rsa" ]]; then
-    ssh-keygen -t rsa -b "$bits" -N "" -C "$type-$bits-$(timestamp)" -f "$keyfile" >/dev/null
-  else
-    ssh-keygen -t ed25519 -a 100 -N "" -C "ed25519-$(timestamp)" -f "$keyfile" >/devnull 2>&1
+  if [[ "$type" == "rsa" || "$type" == "ecdsa" ]]; then
+    ssh-keygen -t "$type" -b "$bits" -N "" -C "$type-$bits-$(timestamp)" -f "$keyfile" >/dev/null
+  elif [[ "$type" == "ed25519" ]]; then
+    ssh-keygen -t ed25519 -a 100 -N "" -C "ed25519-$(timestamp)" -f "$keyfile" >/dev/null 2>&1
+  else # ed448 (not supported by many OpenSSH builds)
+    if ssh-keygen -t ed448 -a 100 -N "" -C "ed448-$(timestamp)" -f "$keyfile" >/dev/null 2>&1; then
+      :
+    else
+      rm -rf "$tmpdir"
+      die "Your ssh-keygen does not support Ed448."
+    fi
   fi
 
   echo "$MSG_SHOW_PRIV"
@@ -327,7 +339,18 @@ generate_key(){
   read -r -p "$MSG_EXPORT" ans
   if is_yes "$ans"; then
     local default_base
-    if [[ "$type" == "rsa" ]]; then default_base="id_rsa_${bits}"; else default_base="id_ed25519"; fi
+    case "$algo" in
+      1) default_base="id_rsa_2048" ;;
+      2) default_base="id_rsa_3072" ;;
+      3) default_base="id_rsa_4096" ;;
+      4) default_base="id_ed25519" ;;
+      5) default_base="id_ecdsa_p256" ;;
+      6) default_base="id_ecdsa_p384" ;;
+      7) default_base="id_ecdsa_p521" ;;
+      8) default_base="id_rsa_8192" ;;
+      9) default_base="id_ed448" ;;
+    esac
+
     local save_priv save_pub
     save_priv="$(pick_save_path "${default_base}" "$MSG_SAVE_PRIV_TITLE")"
     if [[ -n "$save_priv" ]]; then
@@ -371,7 +394,7 @@ derive_public(){
     echo "$pub"
     echo
 
-    # Ask to save private copy
+    # Ask to save
     read -r -p "$MSG_EXPORT" ans
     if is_yes "$ans"; then
       local save_priv save_pub
