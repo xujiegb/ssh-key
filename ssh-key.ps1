@@ -7,6 +7,9 @@ if (-not (Test-Has -Name "ssh-keygen")) {
   throw "ssh-keygen not found. Please enable Windows OpenSSH Client (optional feature)."
 }
 
+# 确保可用 WinForms 对话框
+Add-Type -AssemblyName System.Windows.Forms | Out-Null
+
 function Get-Timestamp { Get-Date -Format "yyyyMMdd-HHmmss" }
 
 function Invoke-SSHKeygen {
@@ -20,10 +23,27 @@ function Invoke-SSHKeygen {
   $parts = @("ssh-keygen","-q","-t",$Type)
   if ($Type -eq 'rsa' -and $Bits -gt 0) { $parts += @("-b",$Bits) }
   if ($Type -eq 'ed25519' -and $KdfRounds -gt 0) { $parts += @("-a",$KdfRounds) }
+  # 通过 cmd 传递 -N "" 为空口令，避免被误判
   $parts += @("-N",'""',"-C","`"$Comment`"","-f","`"$OutFile`"")
   $cmd = ($parts -join ' ')
   $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c",$cmd -Wait -PassThru -NoNewWindow
   if ($p.ExitCode -ne 0) { throw "ssh-keygen failed (exit $($p.ExitCode))" }
+}
+
+function Save-WithDialog {
+  param(
+    [Parameter(Mandatory)][string]$DefaultFileName,
+    [Parameter(Mandatory)][string]$Title,
+    [Parameter(Mandatory)][string]$Filter
+  )
+  $dlg = New-Object System.Windows.Forms.SaveFileDialog
+  $dlg.Title   = $Title
+  $dlg.Filter  = $Filter    # 例: "SSH Key (*.key)|*.key|All Files (*.*)|*.*"
+  $dlg.FileName= $DefaultFileName
+  if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    return $dlg.FileName
+  }
+  return $null
 }
 
 # 语言选择
@@ -63,6 +83,14 @@ switch ($LangId) {
   $T_ENTER="Press Enter to continue..."
   $T_DONE="Done."
   $T_INVALID="Invalid choice."
+  $T_SAVE_PRIV_TITLE="Save private key as..."
+  $T_SAVE_PUB_TITLE="Save public key as..."
+  $T_FILTER_PRIV="SSH private key (*.key)|*.key|All files (*.*)|*.*"
+  $T_FILTER_PUB="OpenSSH public key (*.pub)|*.pub|All files (*.*)|*.*"
+  $T_SAVED="Saved to:"
+  $T_SKIP_SAVE="Skipped saving."
+  $T_ASK_SAVE_PRIV="Do you want to save a copy of the PRIVATE KEY? (Y/N): "
+  $T_ASK_SAVE_PUB="Do you want to save the PUBLIC KEY? (Y/N): "
  }
  "zh-CN" {
   $T_MENU="1) 生成密钥`n2) 由私钥查询公钥`n3) 退出"
@@ -76,6 +104,14 @@ switch ($LangId) {
   $T_ENTER="回车继续……"
   $T_DONE="完成。"
   $T_INVALID="无效选择。"
+  $T_SAVE_PRIV_TITLE="将私钥另存为…"
+  $T_SAVE_PUB_TITLE="将公钥另存为…"
+  $T_FILTER_PRIV="SSH 私钥 (*.key)|*.key|所有文件 (*.*)|*.*"
+  $T_FILTER_PUB="OpenSSH 公钥 (*.pub)|*.pub|所有文件 (*.*)|*.*"
+  $T_SAVED="已保存到："
+  $T_SKIP_SAVE="已跳过保存。"
+  $T_ASK_SAVE_PRIV="是否保存【私钥】副本？(Y/N)："
+  $T_ASK_SAVE_PUB="是否保存【公钥】？(Y/N)："
  }
  "zh-TW" {
   $T_MENU="1) 產生金鑰`n2) 由私鑰查詢公鑰`n3) 離開"
@@ -89,6 +125,14 @@ switch ($LangId) {
   $T_ENTER="按 Enter 繼續……"
   $T_DONE="完成。"
   $T_INVALID="無效選擇。"
+  $T_SAVE_PRIV_TITLE="將私鑰另存為…"
+  $T_SAVE_PUB_TITLE="將公鑰另存為…"
+  $T_FILTER_PRIV="SSH 私鑰 (*.key)|*.key|所有檔案 (*.*)|*.*"
+  $T_FILTER_PUB="OpenSSH 公鑰 (*.pub)|*.pub|所有檔案 (*.*)|*.*"
+  $T_SAVED="已儲存至："
+  $T_SKIP_SAVE="已跳過儲存。"
+  $T_ASK_SAVE_PRIV="是否儲存【私鑰】副本？(Y/N)："
+  $T_ASK_SAVE_PUB="是否儲存【公鑰】？(Y/N)："
  }
  "fr" {
   $T_MENU="1) Générer une clé`n2) Obtenir la clé publique depuis la clé privée`n3) Quitter"
@@ -102,6 +146,14 @@ switch ($LangId) {
   $T_ENTER="Appuyez sur Entrée pour continuer…"
   $T_DONE="Terminé."
   $T_INVALID="Choix invalide."
+  $T_SAVE_PRIV_TITLE="Enregistrer la clé privée sous…"
+  $T_SAVE_PUB_TITLE="Enregistrer la clé publique sous…"
+  $T_FILTER_PRIV="Clé privée SSH (*.key)|*.key|Tous les fichiers (*.*)|*.*"
+  $T_FILTER_PUB="Clé publique OpenSSH (*.pub)|*.pub|Tous les fichiers (*.*)|*.*"
+  $T_SAVED="Enregistré vers :"
+  $T_SKIP_SAVE="Enregistrement ignoré."
+  $T_ASK_SAVE_PRIV="Enregistrer une copie de la CLÉ PRIVÉE ? (Y/N) : "
+  $T_ASK_SAVE_PUB="Enregistrer la CLÉ PUBLIQUE ? (Y/N) : "
  }
  "ru" {
   $T_MENU="1) Сгенерировать ключ`n2) Получить публичный ключ из приватного`n3) Выход"
@@ -115,12 +167,20 @@ switch ($LangId) {
   $T_ENTER="Нажмите Enter для продолжения…"
   $T_DONE="Готово."
   $T_INVALID="Неверный выбор."
+  $T_SAVE_PRIV_TITLE="Сохранить приватный ключ как..."
+  $T_SAVE_PUB_TITLE="Сохранить публичный ключ как..."
+  $T_FILTER_PRIV="Приватный ключ SSH (*.key)|*.key|Все файлы (*.*)|*.*"
+  $T_FILTER_PUB="Публичный ключ OpenSSH (*.pub)|*.pub|Все файлы (*.*)|*.*"
+  $T_SAVED="Сохранено в:"
+  $T_SKIP_SAVE="Сохранение пропущено."
+  $T_ASK_SAVE_PRIV="Сохранить копию ПРИВАТНОГО КЛЮЧА? (Y/N): "
+  $T_ASK_SAVE_PUB="Сохранить ПУБЛИЧНЫЙ КЛЮЧ? (Y/N): "
  }
  "fa" {
   $T_MENU="1) تولید کلید`n2) استخراج کلید عمومی از کلید خصوصی`n3) خروج"
   $T_CHOICE="گزینه را انتخاب کنید: "
   $T_ALGO="الگوریتم را انتخاب کنید:`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519"
-  $T_INPUT="ورود کلید خصوصی به یکی از روش‌ها:`n  1) چسباندن متن`n  2) مسیر فایل"
+  $T_INPUT="ورود کلید خصوصی:`n  1) چسباندن متن`n  2) مسیر فایل"
   $T_PASTE="کلید خصوصی را بچسبانید (با یک خط خالی پایان دهید)، سپس دو بار Enter:"
   $T_PATH="مسیر فایل را وارد کنید: "
   $T_PRIV="--- کلید خصوصی ---"
@@ -128,6 +188,14 @@ switch ($LangId) {
   $T_ENTER="برای ادامه Enter را بزنید…"
   $T_DONE="انجام شد."
   $T_INVALID="گزینه نامعتبر."
+  $T_SAVE_PRIV_TITLE="ذخیرهٔ کلید خصوصی به نام..."
+  $T_SAVE_PUB_TITLE="ذخیرهٔ کلید عمومی به نام..."
+  $T_FILTER_PRIV="کلید خصوصی SSH (*.key)|*.key|همهٔ فایل‌ها (*.*)|*.*"
+  $T_FILTER_PUB="کلید عمومی OpenSSH (*.pub)|*.pub|همهٔ فایل‌ها (*.*)|*.*"
+  $T_SAVED="ذخیره شد در:"
+  $T_SKIP_SAVE="ذخیره انجام نشد."
+  $T_ASK_SAVE_PRIV="آیا یک کپی از «کلید خصوصی» ذخیره شود؟ (Y/N): "
+  $T_ASK_SAVE_PUB="آیا «کلید عمومی» ذخیره شود؟ (Y/N): "
  }
  "ja" {
   $T_MENU="1) 鍵を生成`n2) 秘密鍵から公開鍵を取得`n3) 終了"
@@ -141,6 +209,14 @@ switch ($LangId) {
   $T_ENTER="続行するには Enter を押してください…"
   $T_DONE="完了しました。"
   $T_INVALID="無効な選択です。"
+  $T_SAVE_PRIV_TITLE="秘密鍵の保存先を選択..."
+  $T_SAVE_PUB_TITLE="公開鍵の保存先を選択..."
+  $T_FILTER_PRIV="SSH 秘密鍵 (*.key)|*.key|すべてのファイル (*.*)|*.*"
+  $T_FILTER_PUB="OpenSSH 公開鍵 (*.pub)|*.pub|すべてのファイル (*.*)|*.*"
+  $T_SAVED="保存しました:"
+  $T_SKIP_SAVE="保存をスキップしました。"
+  $T_ASK_SAVE_PRIV="【秘密鍵】を保存しますか？(Y/N): "
+  $T_ASK_SAVE_PUB="【公開鍵】を保存しますか？(Y/N): "
  }
 }
 
@@ -151,17 +227,34 @@ function Generate-Key {
   $sel = Read-Host ">"
   $tmp = [System.IO.Path]::GetTempFileName()
   $key = "$tmp.key"
+
   switch ($sel) {
-    "1" { Invoke-SSHKeygen -Type rsa -Bits 2048  -Comment ("rsa-2048-"+(Get-Timestamp)) -OutFile $key }
-    "2" { Invoke-SSHKeygen -Type rsa -Bits 3072  -Comment ("rsa-3072-"+(Get-Timestamp)) -OutFile $key }
-    "3" { Invoke-SSHKeygen -Type rsa -Bits 4096  -Comment ("rsa-4096-"+(Get-Timestamp)) -OutFile $key }
-    "4" { Invoke-SSHKeygen -Type ed25519 -KdfRounds 100 -Comment ("ed25519-"+(Get-Timestamp)) -OutFile $key }
+    "1" { Invoke-SSHKeygen -Type rsa -Bits 2048  -Comment ("rsa-2048-"+(Get-Timestamp)) -OutFile $key;  $defBase="id_rsa_2048" }
+    "2" { Invoke-SSHKeygen -Type rsa -Bits 3072  -Comment ("rsa-3072-"+(Get-Timestamp)) -OutFile $key;  $defBase="id_rsa_3072" }
+    "3" { Invoke-SSHKeygen -Type rsa -Bits 4096  -Comment ("rsa-4096-"+(Get-Timestamp)) -OutFile $key;  $defBase="id_rsa_4096" }
+    "4" { Invoke-SSHKeygen -Type ed25519 -KdfRounds 100 -Comment ("ed25519-"+(Get-Timestamp)) -OutFile $key; $defBase="id_ed25519" }
     default { Write-Host $T_INVALID; Pause-Enter; return }
   }
+
   Write-Host $T_PRIV
   Get-Content -Raw "$key"
   "`n$T_PUB"
   Get-Content -Raw "$key.pub"
+
+  # 资源管理器保存对话框：一次选择私钥，公钥自动 .pub
+  $savePriv = Save-WithDialog -DefaultFileName ($defBase + ".key") -Title $T_SAVE_PRIV_TITLE -Filter $T_FILTER_PRIV
+  if ($savePriv) {
+    try {
+      Copy-Item "$key" $savePriv -Force
+      $savePub = [System.IO.Path]::ChangeExtension($savePriv, ".pub")
+      Copy-Item "$key.pub" $savePub -Force
+      Write-Host "$T_SAVED $savePriv"
+      Write-Host "$T_SAVED $savePub"
+    } catch { Write-Host $_.Exception.Message }
+  } else {
+    Write-Host $T_SKIP_SAVE
+  }
+
   Remove-Item "$key","$key.pub" -Force
   Write-Host $T_DONE
   Pause-Enter
@@ -171,27 +264,55 @@ function Derive-Public {
   Write-Host $T_INPUT
   $sel = Read-Host ">"
   $tmp = [System.IO.Path]::GetTempFileName()
-  if ($sel -eq "1") {
-    Write-Host $T_PASTE
-    $sb = New-Object System.Text.StringBuilder
-    while ($true) {
-      $line = Read-Host
-      if ([string]::IsNullOrWhiteSpace($line)) { break }
-      [void]$sb.AppendLine($line)
-    }
-    [IO.File]::WriteAllText($tmp,$sb.ToString())
-  } elseif ($sel -eq "2") {
-    $p = Read-Host $T_PATH
-    if (-not (Test-Path $p)) { Write-Host "File not found."; Pause-Enter; return }
-    Copy-Item $p $tmp -Force
-  } else { Write-Host $T_INVALID; Pause-Enter; return }
+  try {
+    if ($sel -eq "1") {
+      Write-Host $T_PASTE
+      $sb = New-Object System.Text.StringBuilder
+      while ($true) {
+        $line = Read-Host
+        if ([string]::IsNullOrWhiteSpace($line)) { break }
+        [void]$sb.AppendLine($line)
+      }
+      [IO.File]::WriteAllText($tmp,$sb.ToString())
+    } elseif ($sel -eq "2") {
+      $p = Read-Host $T_PATH
+      if (-not (Test-Path $p)) { Write-Host "File not found."; Pause-Enter; return }
+      Copy-Item $p $tmp -Force
+    } else { Write-Host $T_INVALID; Pause-Enter; return }
 
-  $pub = & ssh-keygen -y -f $tmp 2>$null
-  Write-Host $T_PUB
-  Write-Host $pub
-  Remove-Item $tmp -Force
-  Write-Host $T_DONE
-  Pause-Enter
+    $pub = & ssh-keygen -y -f $tmp 2>$null
+    Write-Host $T_PUB
+    Write-Host $pub
+
+    # 询问是否保存私钥副本
+    $ansPriv = Read-Host $T_ASK_SAVE_PRIV
+    if ($ansPriv -match '^[Yy]') {
+      $savePriv = Save-WithDialog -DefaultFileName "derived_private.key" -Title $T_SAVE_PRIV_TITLE -Filter $T_FILTER_PRIV
+      if ($savePriv) {
+        Copy-Item $tmp $savePriv -Force
+        Write-Host "$T_SAVED $savePriv"
+      } else {
+        Write-Host $T_SKIP_SAVE
+      }
+    }
+
+    # 询问是否保存公钥
+    $ansPub = Read-Host $T_ASK_SAVE_PUB
+    if ($ansPub -match '^[Yy]') {
+      $savePub = Save-WithDialog -DefaultFileName "derived_public.pub" -Title $T_SAVE_PUB_TITLE -Filter $T_FILTER_PUB
+      if ($savePub) {
+        Set-Content -Path $savePub -Value $pub -NoNewline -Encoding ascii
+        Write-Host "$T_SAVED $savePub"
+      } else {
+        Write-Host $T_SKIP_SAVE
+      }
+    }
+
+    Write-Host $T_DONE
+    Pause-Enter
+  } finally {
+    Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+  }
 }
 
 while ($true) {
