@@ -24,7 +24,7 @@ function Open-ExportFolder {
   try { if (Test-Path $Path) { Start-Process -FilePath "explorer.exe" -ArgumentList "`"$Path`"" } } catch {}
 }
 
-# --- 修复：不用 ?:，改成 if/else；并用 cmd /c 调 ssh-keygen 以确保 -N "" 真为空 ---
+# 用 cmd /c 调用 ssh-keygen，确保 -N "" 为空字符串（避免被误当作下一个参数）
 function Invoke-SSHKeygen {
   param(
     [Parameter(Mandatory)][ValidateSet('rsa','ed25519')]$Type,
@@ -43,7 +43,7 @@ function Invoke-SSHKeygen {
     $parts += @("-a", $KdfRounds)
   }
 
-  # -N "" 必须经由 cmd 传递为空字符串，避免 Win 版 ssh-keygen 误判
+  # -N "" 必须经由 cmd 传递为空字符串
   $parts += @("-N", '""', "-C", "`"$Comment`"", "-f", "`"$OutFile`"")
 
   $cmd = ($parts -join ' ')
