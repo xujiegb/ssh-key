@@ -14,16 +14,18 @@ function Get-Timestamp { Get-Date -Format "yyyyMMdd-HHmmss" }
 
 function Invoke-SSHKeygen {
   param(
-    [Parameter(Mandatory)][ValidateSet('rsa','ed25519','ecdsa','ed448')]$Type,
+    [Parameter(Mandatory)]
+    [ValidateSet('rsa','ed25519','ecdsa','ed448')]
+    $Type,
     [int]$Bits = 0,
     [int]$KdfRounds = 0,
     [Parameter(Mandatory)][string]$Comment,
     [Parameter(Mandatory)][string]$OutFile
   )
   $parts = @("ssh-keygen","-q","-t",$Type)
-  if ($Type -eq 'rsa' -and $Bits -gt 0)      { $parts += @("-b",$Bits) }
-  if ($Type -eq 'ecdsa' -and $Bits -gt 0)    { $parts += @("-b",$Bits) }
-  if (($Type -eq 'ed25519' -or $Type -eq 'ed448') -and $KdfRounds -gt 0) { $parts += @("-a",$KdfRounds) }
+  if ($Type -eq 'rsa'   -and $Bits -gt 0) { $parts += @("-b",$Bits) }
+  if ($Type -eq 'ecdsa' -and $Bits -gt 0) { $parts += @("-b",$Bits) }
+  if (('ed25519','ed448') -contains $Type -and $KdfRounds -gt 0) { $parts += @("-a",$KdfRounds) }
   # 通过 cmd 传递 -N "" 为空口令，避免被误判
   $parts += @("-N",'""',"-C","`"$Comment`"","-f","`"$OutFile`"")
   $cmd = ($parts -join ' ')
@@ -75,18 +77,7 @@ switch ($LangId) {
  "en" {
   $T_MENU="1) Generate key`n2) Derive public key from private key`n3) Exit"
   $T_CHOICE="Choose an option: "
-  $T_ALGO= @"
-Select algorithm:
-  1) RSA 2048
-  2) RSA 3072
-  3) RSA 4096
-  4) Ed25519
-  5) ECDSA P-256
-  6) ECDSA P-384
-  7) ECDSA P-521
-  8) RSA 8192
-  9) Ed448 (may not be supported by your OpenSSH)
-"@
+  $T_ALGO="Select algorithm:`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519`n  5) ECDSA P-256`n  6) ECDSA P-384`n  7) ECDSA P-521`n  8) RSA 5120`n  9) RSA 6144`n 10) RSA 8192`n 11) Ed448"
   $T_INPUT="Input private key by:`n  1) Paste text`n  2) File path"
   $T_PASTE="Paste PRIVATE KEY (finish with an empty line), then press Enter twice:"
   $T_PATH="Enter file path: "
@@ -107,18 +98,7 @@ Select algorithm:
  "zh-CN" {
   $T_MENU="1) 生成密钥`n2) 由私钥查询公钥`n3) 退出"
   $T_CHOICE="请选择："
-  $T_ALGO= @"
-选择算法：
-  1) RSA 2048
-  2) RSA 3072
-  3) RSA 4096
-  4) Ed25519
-  5) ECDSA P-256
-  6) ECDSA P-384
-  7) ECDSA P-521
-  8) RSA 8192
-  9) Ed448（多数 OpenSSH 尚不支持）
-"@
+  $T_ALGO="选择算法：`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519`n  5) ECDSA P-256`n  6) ECDSA P-384`n  7) ECDSA P-521`n  8) RSA 5120`n  9) RSA 6144`n 10) RSA 8192`n 11) Ed448"
   $T_INPUT="选择私钥输入方式：`n  1) 粘贴文本`n  2) 文件路径"
   $T_PASTE="请粘贴【私钥】，以空行结束，然后连续按两次回车："
   $T_PATH="请输入文件路径："
@@ -139,18 +119,7 @@ Select algorithm:
  "zh-TW" {
   $T_MENU="1) 產生金鑰`n2) 由私鑰查詢公鑰`n3) 離開"
   $T_CHOICE="請選擇："
-  $T_ALGO= @"
-選擇演算法：
-  1) RSA 2048
-  2) RSA 3072
-  3) RSA 4096
-  4) Ed25519
-  5) ECDSA P-256
-  6) ECDSA P-384
-  7) ECDSA P-521
-  8) RSA 8192
-  9) Ed448（多數 OpenSSH 尚不支援）
-"@
+  $T_ALGO="選擇演算法：`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519`n  5) ECDSA P-256`n  6) ECDSA P-384`n  7) ECDSA P-521`n  8) RSA 5120`n  9) RSA 6144`n 10) RSA 8192`n 11) Ed448"
   $T_INPUT="選擇私鑰輸入方式：`n  1) 貼上文本`n  2) 檔案路徑"
   $T_PASTE="請貼上【私鑰】，以空行結束，然後連按兩次 Enter："
   $T_PATH="請輸入檔案路徑："
@@ -171,18 +140,7 @@ Select algorithm:
  "fr" {
   $T_MENU="1) Générer une clé`n2) Obtenir la clé publique depuis la clé privée`n3) Quitter"
   $T_CHOICE="Votre choix : "
-  $T_ALGO= @"
-Choisir l’algorithme :
-  1) RSA 2048
-  2) RSA 3072
-  3) RSA 4096
-  4) Ed25519
-  5) ECDSA P-256
-  6) ECDSA P-384
-  7) ECDSA P-521
-  8) RSA 8192
-  9) Ed448 (souvent non pris en charge par OpenSSH)
-"@
+  $T_ALGO="Choisir l’algorithme :`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519`n  5) ECDSA P-256`n  6) ECDSA P-384`n  7) ECDSA P-521`n  8) RSA 5120`n  9) RSA 6144`n 10) RSA 8192`n 11) Ed448"
   $T_INPUT="Saisir la clé privée par :`n  1) Coller le texte`n  2) Chemin de fichier"
   $T_PASTE="Collez la CLÉ PRIVÉE (terminez par une ligne vide), puis appuyez deux fois sur Entrée :"
   $T_PATH="Saisir le chemin du fichier : "
@@ -203,18 +161,7 @@ Choisir l’algorithme :
  "ru" {
   $T_MENU="1) Сгенерировать ключ`n2) Получить публичный ключ из приватного`n3) Выход"
   $T_CHOICE="Выберите действие: "
-  $T_ALGO= @"
-Выберите алгоритм:
-  1) RSA 2048
-  2) RSA 3072
-  3) RSA 4096
-  4) Ed25519
-  5) ECDSA P-256
-  6) ECDSA P-384
-  7) ECDSA P-521
-  8) RSA 8192
-  9) Ed448 (часто не поддерживается OpenSSH)
-"@
+  $T_ALGO="Выберите алгоритм:`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519`n  5) ECDSA P-256`n  6) ECDSA P-384`n  7) ECDSA P-521`n  8) RSA 5120`n  9) RSA 6144`n 10) RSA 8192`n 11) Ed448"
   $T_INPUT="Как ввести приватный ключ:`n  1) Вставить текст`n  2) Путь к файлу"
   $T_PASTE="Вставьте ПРИВАТНЫЙ КЛЮЧ (завершите пустой строкой), затем дважды Enter:"
   $T_PATH="Введите путь к файлу: "
@@ -235,18 +182,7 @@ Choisir l’algorithme :
  "fa" {
   $T_MENU="1) تولید کلید`n2) استخراج کلید عمومی از کلید خصوصی`n3) خروج"
   $T_CHOICE="گزینه را انتخاب کنید: "
-  $T_ALGO= @"
-الگوریتم را انتخاب کنید:
-  1) RSA 2048
-  2) RSA 3072
-  3) RSA 4096
-  4) Ed25519
-  5) ECDSA P-256
-  6) ECDSA P-384
-  7) ECDSA P-521
-  8) RSA 8192
-  9) Ed448 (اغلب توسط OpenSSH پشتیبانی نمی‌شود)
-"@
+  $T_ALGO="الگوریتم را انتخاب کنید:`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519`n  5) ECDSA P-256`n  6) ECDSA P-384`n  7) ECDSA P-521`n  8) RSA 5120`n  9) RSA 6144`n 10) RSA 8192`n 11) Ed448"
   $T_INPUT="ورود کلید خصوصی:`n  1) چسباندن متن`n  2) مسیر فایل"
   $T_PASTE="کلید خصوصی را بچسبانید (با یک خط خالی پایان دهید)، سپس دو بار Enter:"
   $T_PATH="مسیر فایل را وارد کنید: "
@@ -267,18 +203,7 @@ Choisir l’algorithme :
  "ja" {
   $T_MENU="1) 鍵を生成`n2) 秘密鍵から公開鍵を取得`n3) 終了"
   $T_CHOICE="番号を選択してください: "
-  $T_ALGO= @"
-アルゴリズム:
-  1) RSA 2048
-  2) RSA 3072
-  3) RSA 4096
-  4) Ed25519
-  5) ECDSA P-256
-  6) ECDSA P-384
-  7) ECDSA P-521
-  8) RSA 8192
-  9) Ed448（多くの OpenSSH で未対応）
-"@
+  $T_ALGO="アルゴリズム:`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519`n  5) ECDSA P-256`n  6) ECDSA P-384`n  7) ECDSA P-521`n  8) RSA 5120`n  9) RSA 6144`n 10) RSA 8192`n 11) Ed448"
   $T_INPUT="秘密鍵の入力方法:`n  1) テキスト貼り付け`n  2) ファイルパス"
   $T_PASTE="【秘密鍵】を貼り付け、空行で終了後、Enter を 2 回押してください:"
   $T_PATH="ファイルパスを入力: "
@@ -307,15 +232,17 @@ function Generate-Key {
   $key = "$tmp.key"
 
   switch ($sel) {
-    "1" { Invoke-SSHKeygen -Type rsa     -Bits 2048  -Comment ("rsa-2048-"+(Get-Timestamp))   -OutFile $key; $defBase="id_rsa_2048" }
-    "2" { Invoke-SSHKeygen -Type rsa     -Bits 3072  -Comment ("rsa-3072-"+(Get-Timestamp))   -OutFile $key; $defBase="id_rsa_3072" }
-    "3" { Invoke-SSHKeygen -Type rsa     -Bits 4096  -Comment ("rsa-4096-"+(Get-Timestamp))   -OutFile $key; $defBase="id_rsa_4096" }
-    "4" { Invoke-SSHKeygen -Type ed25519 -KdfRounds 100 -Comment ("ed25519-"+(Get-Timestamp)) -OutFile $key; $defBase="id_ed25519" }
-    "5" { Invoke-SSHKeygen -Type ecdsa   -Bits 256  -Comment ("ecdsa-p256-"+(Get-Timestamp))  -OutFile $key; $defBase="id_ecdsa_p256" }
-    "6" { Invoke-SSHKeygen -Type ecdsa   -Bits 384  -Comment ("ecdsa-p384-"+(Get-Timestamp))  -OutFile $key; $defBase="id_ecdsa_p384" }
-    "7" { Invoke-SSHKeygen -Type ecdsa   -Bits 521  -Comment ("ecdsa-p521-"+(Get-Timestamp))  -OutFile $key; $defBase="id_ecdsa_p521" }
-    "8" { Invoke-SSHKeygen -Type rsa     -Bits 8192 -Comment ("rsa-8192-"+(Get-Timestamp))    -OutFile $key; $defBase="id_rsa_8192" }
-    "9" { Invoke-SSHKeygen -Type ed448   -KdfRounds 100 -Comment ("ed448-"+(Get-Timestamp))   -OutFile $key; $defBase="id_ed448" }
+    "1"  { Invoke-SSHKeygen -Type rsa     -Bits 2048 -Comment ("rsa-2048-"+(Get-Timestamp))     -OutFile $key; $defBase="id_rsa_2048" }
+    "2"  { Invoke-SSHKeygen -Type rsa     -Bits 3072 -Comment ("rsa-3072-"+(Get-Timestamp))     -OutFile $key; $defBase="id_rsa_3072" }
+    "3"  { Invoke-SSHKeygen -Type rsa     -Bits 4096 -Comment ("rsa-4096-"+(Get-Timestamp))     -OutFile $key; $defBase="id_rsa_4096" }
+    "4"  { Invoke-SSHKeygen -Type ed25519 -KdfRounds 100 -Comment ("ed25519-"+(Get-Timestamp))  -OutFile $key; $defBase="id_ed25519" }
+    "5"  { Invoke-SSHKeygen -Type ecdsa   -Bits 256  -Comment ("ecdsa-p256-"+(Get-Timestamp))   -OutFile $key; $defBase="id_ecdsa_p256" }
+    "6"  { Invoke-SSHKeygen -Type ecdsa   -Bits 384  -Comment ("ecdsa-p384-"+(Get-Timestamp))   -OutFile $key; $defBase="id_ecdsa_p384" }
+    "7"  { Invoke-SSHKeygen -Type ecdsa   -Bits 521  -Comment ("ecdsa-p521-"+(Get-Timestamp))   -OutFile $key; $defBase="id_ecdsa_p521" }
+    "8"  { Invoke-SSHKeygen -Type rsa     -Bits 5120 -Comment ("rsa-5120-"+(Get-Timestamp))     -OutFile $key; $defBase="id_rsa_5120" }
+    "9"  { Invoke-SSHKeygen -Type rsa     -Bits 6144 -Comment ("rsa-6144-"+(Get-Timestamp))     -OutFile $key; $defBase="id_rsa_6144" }
+    "10" { Invoke-SSHKeygen -Type rsa     -Bits 8192 -Comment ("rsa-8192-"+(Get-Timestamp))     -OutFile $key; $defBase="id_rsa_8192" }
+    "11" { Invoke-SSHKeygen -Type ed448   -KdfRounds 100 -Comment ("ed448-"+(Get-Timestamp))     -OutFile $key; $defBase="id_ed448" }
     default { Write-Host $T_INVALID; Pause-Enter; return }
   }
 
@@ -324,7 +251,7 @@ function Generate-Key {
   "`n$T_PUB"
   Get-Content -Raw "$key.pub"
 
-  # === 导出前询问 ===
+  # 导出前询问
   $ans = Read-Host $T_ASK_SAVE_PRIV
   if ($ans -match '^[Yy]') {
     # 资源管理器保存对话框：一次选择私钥，公钥自动 .pub
