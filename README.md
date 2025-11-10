@@ -1,7 +1,7 @@
 # SSH-Key
 ### macOS/Linux
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/xujiegb/SSH-Key/refs/heads/master/ssk-key.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/xujiegb/ssh-key/master/ssh-key.sh)
 ```
 ### Windows
 ```powershell
