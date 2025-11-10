@@ -89,7 +89,7 @@ switch ($LangId) {
   $T_FILTER_PUB="OpenSSH public key (*.pub)|*.pub|All files (*.*)|*.*"
   $T_SAVED="Saved to:"
   $T_SKIP_SAVE="Skipped saving."
-  $T_ASK_SAVE_PRIV="Do you want to save a copy of the PRIVATE KEY? (Y/N): "
+  $T_ASK_SAVE_PRIV="Do you want to save the keys to files now? (Y/N): "
   $T_ASK_SAVE_PUB="Do you want to save the PUBLIC KEY? (Y/N): "
  }
  "zh-CN" {
@@ -110,7 +110,7 @@ switch ($LangId) {
   $T_FILTER_PUB="OpenSSH 公钥 (*.pub)|*.pub|所有文件 (*.*)|*.*"
   $T_SAVED="已保存到："
   $T_SKIP_SAVE="已跳过保存。"
-  $T_ASK_SAVE_PRIV="是否保存【私钥】副本？(Y/N)："
+  $T_ASK_SAVE_PRIV="现在要将密钥导出到文件吗？(Y/N)："
   $T_ASK_SAVE_PUB="是否保存【公钥】？(Y/N)："
  }
  "zh-TW" {
@@ -131,7 +131,7 @@ switch ($LangId) {
   $T_FILTER_PUB="OpenSSH 公鑰 (*.pub)|*.pub|所有檔案 (*.*)|*.*"
   $T_SAVED="已儲存至："
   $T_SKIP_SAVE="已跳過儲存。"
-  $T_ASK_SAVE_PRIV="是否儲存【私鑰】副本？(Y/N)："
+  $T_ASK_SAVE_PRIV="現在要將金鑰匯出到檔案嗎？(Y/N)："
   $T_ASK_SAVE_PUB="是否儲存【公鑰】？(Y/N)："
  }
  "fr" {
@@ -152,7 +152,7 @@ switch ($LangId) {
   $T_FILTER_PUB="Clé publique OpenSSH (*.pub)|*.pub|Tous les fichiers (*.*)|*.*"
   $T_SAVED="Enregistré vers :"
   $T_SKIP_SAVE="Enregistrement ignoré."
-  $T_ASK_SAVE_PRIV="Enregistrer une copie de la CLÉ PRIVÉE ? (Y/N) : "
+  $T_ASK_SAVE_PRIV="Souhaitez-vous exporter les clés vers des fichiers maintenant ? (Y/N) : "
   $T_ASK_SAVE_PUB="Enregistrer la CLÉ PUBLIQUE ? (Y/N) : "
  }
  "ru" {
@@ -173,7 +173,7 @@ switch ($LangId) {
   $T_FILTER_PUB="Публичный ключ OpenSSH (*.pub)|*.pub|Все файлы (*.*)|*.*"
   $T_SAVED="Сохранено в:"
   $T_SKIP_SAVE="Сохранение пропущено."
-  $T_ASK_SAVE_PRIV="Сохранить копию ПРИВАТНОГО КЛЮЧА? (Y/N): "
+  $T_ASK_SAVE_PRIV="Экспортировать ключи в файлы сейчас? (Y/N): "
   $T_ASK_SAVE_PUB="Сохранить ПУБЛИЧНЫЙ КЛЮЧ? (Y/N): "
  }
  "fa" {
@@ -194,8 +194,8 @@ switch ($LangId) {
   $T_FILTER_PUB="کلید عمومی OpenSSH (*.pub)|*.pub|همهٔ فایل‌ها (*.*)|*.*"
   $T_SAVED="ذخیره شد در:"
   $T_SKIP_SAVE="ذخیره انجام نشد."
-  $T_ASK_SAVE_PRIV="آیا یک کپی از «کلید خصوصی» ذخیره شود؟ (Y/N): "
-  $T_ASK_SAVE_PUB="آیا «کلید عمومی» ذخیره شود؟ (Y/N): "
+  $T_ASK_SAVE_PRIV="همین حالا کلیدها به فایل ذخیره شوند؟ (Y/N): "
+  $T_ASK_SAVE_PUB="«کلید عمومی» ذخیره شود؟ (Y/N): "
  }
  "ja" {
   $T_MENU="1) 鍵を生成`n2) 秘密鍵から公開鍵を取得`n3) 終了"
@@ -215,7 +215,7 @@ switch ($LangId) {
   $T_FILTER_PUB="OpenSSH 公開鍵 (*.pub)|*.pub|すべてのファイル (*.*)|*.*"
   $T_SAVED="保存しました:"
   $T_SKIP_SAVE="保存をスキップしました。"
-  $T_ASK_SAVE_PRIV="【秘密鍵】を保存しますか？(Y/N): "
+  $T_ASK_SAVE_PRIV="今すぐファイルに保存しますか？(Y/N): "
   $T_ASK_SAVE_PUB="【公開鍵】を保存しますか？(Y/N): "
  }
 }
@@ -241,16 +241,22 @@ function Generate-Key {
   "`n$T_PUB"
   Get-Content -Raw "$key.pub"
 
-  # 资源管理器保存对话框：一次选择私钥，公钥自动 .pub
-  $savePriv = Save-WithDialog -DefaultFileName ($defBase + ".key") -Title $T_SAVE_PRIV_TITLE -Filter $T_FILTER_PRIV
-  if ($savePriv) {
-    try {
-      Copy-Item "$key" $savePriv -Force
-      $savePub = [System.IO.Path]::ChangeExtension($savePriv, ".pub")
-      Copy-Item "$key.pub" $savePub -Force
-      Write-Host "$T_SAVED $savePriv"
-      Write-Host "$T_SAVED $savePub"
-    } catch { Write-Host $_.Exception.Message }
+  # === 新增：导出前询问 ===
+  $ans = Read-Host $T_ASK_SAVE_PRIV
+  if ($ans -match '^[Yy]') {
+    # 资源管理器保存对话框：一次选择私钥，公钥自动 .pub
+    $savePriv = Save-WithDialog -DefaultFileName ($defBase + ".key") -Title $T_SAVE_PRIV_TITLE -Filter $T_FILTER_PRIV
+    if ($savePriv) {
+      try {
+        Copy-Item "$key" $savePriv -Force
+        $savePub = [System.IO.Path]::ChangeExtension($savePriv, ".pub")
+        Copy-Item "$key.pub" $savePub -Force
+        Write-Host "$T_SAVED $savePriv"
+        Write-Host "$T_SAVED $savePub"
+      } catch { Write-Host $_.Exception.Message }
+    } else {
+      Write-Host $T_SKIP_SAVE
+    }
   } else {
     Write-Host $T_SKIP_SAVE
   }
