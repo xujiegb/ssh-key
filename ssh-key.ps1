@@ -10,21 +10,40 @@ if (-not (Test-Has -Name "ssh-keygen")) {
 
 function Get-Timestamp { Get-Date -Format "yyyyMMdd-HHmmss" }
 
-function Get-DownloadsPath {
-  $home = $env:USERPROFILE
-  $dl = Join-Path $home "Downloads"
-  if (-not (Test-Path $dl)) { New-Item -ItemType Directory -Path $dl | Out-Null }
-  $dir = Join-Path $dl (Get-Timestamp)
-  New-Item -ItemType Directory -Path $dir | Out-Null
+# ---- 可靠导出目录选择（Downloads -> TEMP -> 当前目录），逐一实际可写性探测 ----
+function Get-ExportRoot {
+  $candidates = @()
+  if ($env:USERPROFILE) {
+    $dl = Join-Path $env:USERPROFILE "Downloads"
+    if (-not (Test-Path $dl)) { New-Item -ItemType Directory -Path $dl -ErrorAction SilentlyContinue | Out-Null }
+    $candidates += $dl
+  }
+  if ($env:TEMP) { $candidates += $env:TEMP }
+  $candidates += (Get-Location).Path
+
+  foreach ($root in $candidates) {
+    try {
+      if (-not (Test-Path $root)) { continue }
+      $probeDir = Join-Path $root ("sshkey-probe-" + (Get-Timestamp))
+      New-Item -ItemType Directory -Path $probeDir -ErrorAction Stop | Out-Null
+      $probeFile = Join-Path $probeDir "probe.txt"
+      Set-Content -Path $probeFile -Value "ok" -NoNewline -ErrorAction Stop
+      Remove-Item $probeDir -Recurse -Force -ErrorAction SilentlyContinue
+      return $root
+    } catch { continue }
+  }
+  # 理论到不了；兜底当前目录
+  return (Get-Location).Path
+}
+
+function Get-ExportDir {
+  $root = Get-ExportRoot
+  $dir  = Join-Path $root (Get-Timestamp)
+  New-Item -ItemType Directory -Path $dir -ErrorAction SilentlyContinue | Out-Null
   return $dir
 }
 
-function Open-ExportFolder {
-  param([Parameter(Mandatory)][string]$Path)
-  try { if (Test-Path $Path) { Start-Process -FilePath "explorer.exe" -ArgumentList "`"$Path`"" } } catch {}
-}
-
-# 用 cmd /c 调用 ssh-keygen，确保 -N "" 为空字符串（避免被误当作下一个参数）
+# 用 cmd /c 调用 ssh-keygen，确保 -N "" 真为空串；避免 Win 版误判
 function Invoke-SSHKeygen {
   param(
     [Parameter(Mandatory)][ValidateSet('rsa','ed25519')]$Type,
@@ -35,15 +54,9 @@ function Invoke-SSHKeygen {
   )
 
   $parts = @("ssh-keygen","-q","-t",$Type)
-
-  if ($Type -eq 'rsa' -and $Bits -gt 0) {
-    $parts += @("-b", $Bits)
-  }
-  if ($Type -eq 'ed25519' -and $KdfRounds -gt 0) {
-    $parts += @("-a", $KdfRounds)
-  }
-
-  # -N "" 必须经由 cmd 传递为空字符串
+  if ($Type -eq 'rsa' -and $Bits -gt 0) { $parts += @("-b", $Bits) }
+  if ($Type -eq 'ed25519' -and $KdfRounds -gt 0) { $parts += @("-a", $KdfRounds) }
+  # 注意引号：-N "" 必须经由 cmd 保留为空；-C/-f 用显式引号保证路径/注释安全
   $parts += @("-N", '""', "-C", "`"$Comment`"", "-f", "`"$OutFile`"")
 
   $cmd = ($parts -join ' ')
@@ -51,8 +64,8 @@ function Invoke-SSHKeygen {
   if ($p.ExitCode -ne 0) { throw "ssh-keygen failed (exit $($p.ExitCode)): $cmd" }
 }
 
-# --- i18n ---------------------------------------------------------------
-$LangId = "en"
+# -------- i18n --------
+$LangId = "zh-CN"  # 默认简中，也可改成 "en"
 Write-Host @"
 Choose language / 选择语言 / 選擇語言 / Choisir la langue / Выбрать язык / انتخاب زبان / 言語を選択:
   1) English
@@ -65,13 +78,13 @@ Choose language / 选择语言 / 選擇語言 / Choisir la langue / Выбрат
 "@
 $choice = Read-Host ">"
 switch ($choice) {
-  "2" { $LangId = "zh-CN" }
+  "1" { $LangId = "en" }
   "3" { $LangId = "zh-TW" }
   "4" { $LangId = "fr" }
   "5" { $LangId = "ru" }
   "6" { $LangId = "fa" }
   "7" { $LangId = "ja" }
-  default { $LangId = "en" }
+  default { $LangId = "zh-CN" }
 }
 
 switch ($LangId) {
@@ -155,7 +168,7 @@ switch ($LangId) {
   $T_CHOICE="گزینه را انتخاب کنید: "
   $T_ALGO="الگوریتم:`n  1) RSA 2048`n  2) RSA 3072`n  3) RSA 4096`n  4) Ed25519"
   $T_INPUT="ورود کلید خصوصی:`n  1) چسباندن متن`n  2) مسیر فایل (درگ‌اند‌دراپ)"
-  $T_PASTE="کلید خصوصی را بچسبانید (با یک خط خالی پایان دهید)، سپس دو بار Enter:"
+  $T_PASTE="کلید خصوصی را بچسبانید (با خط خالی پایان دهید)، سپس دو بار Enter:"
   $T_PATH="مسیر فایل را وارد کنید: "
   $T_PRIV="--- کلید خصوصی ---"
   $T_PUB="--- کلید عمومی ---"
@@ -174,7 +187,7 @@ switch ($LangId) {
   $T_PATH="ファイルパスを入力: "
   $T_PRIV="--- 秘密鍵 ---"
   $T_PUB="--- 公開鍵 ---"
-  $T_EXPORT="ファイルへ出力しますか？ [y/N] : "
+  $T_EXPORT="ファイルへ出力しますか？ [y/N]："
   $T_EXPORTED="出力先:"
   $T_ENTER="続行するには Enter を押してください…"
   $T_DONE="完了しました。"
@@ -192,9 +205,9 @@ function Generate-Key {
   $key = Join-Path $tmp "id_tmp"
 
   switch ($sel) {
-    "1" { Invoke-SSHKeygen -Type rsa -Bits 2048  -Comment ("rsa-2048-"  + (Get-Timestamp)) -OutFile $key }
-    "2" { Invoke-SSHKeygen -Type rsa -Bits 3072  -Comment ("rsa-3072-"  + (Get-Timestamp)) -OutFile $key }
-    "3" { Invoke-SSHKeygen -Type rsa -Bits 4096  -Comment ("rsa-4096-"  + (Get-Timestamp)) -OutFile $key }
+    "1" { Invoke-SSHKeygen -Type rsa     -Bits 2048  -Comment ("rsa-2048-"  + (Get-Timestamp)) -OutFile $key }
+    "2" { Invoke-SSHKeygen -Type rsa     -Bits 3072  -Comment ("rsa-3072-"  + (Get-Timestamp)) -OutFile $key }
+    "3" { Invoke-SSHKeygen -Type rsa     -Bits 4096  -Comment ("rsa-4096-"  + (Get-Timestamp)) -OutFile $key }
     "4" { Invoke-SSHKeygen -Type ed25519 -KdfRounds 100 -Comment ("ed25519-"+ (Get-Timestamp)) -OutFile $key }
     default { Write-Host $T_INVALID; Pause-Enter; return }
   }
@@ -206,18 +219,20 @@ function Generate-Key {
 
   $ans = Read-Host $T_EXPORT
   if ($ans -match '^[Yy]') {
-    $outdir = Get-DownloadsPath
-    if ($sel -in "1","2","3") {
-      $bits = @{ "1"=2048; "2"=3072; "3"=4096 }[$sel]
-      Copy-Item "$key"     (Join-Path $outdir "id_rsa_$bits")
-      Copy-Item "$key.pub" (Join-Path $outdir "id_rsa_$bits.pub")
+    $outdir = Get-ExportDir
+    try {
+      if ($sel -in "1","2","3") {
+        $bits = @{ "1"=2048; "2"=3072; "3"=4096 }[$sel]
+        Copy-Item "$key"     (Join-Path $outdir "id_rsa_$bits")     -ErrorAction Stop
+        Copy-Item "$key.pub" (Join-Path $outdir "id_rsa_$bits.pub") -ErrorAction Stop
+      } else {
+        Copy-Item "$key"     (Join-Path $outdir "id_ed25519")       -ErrorAction Stop
+        Copy-Item "$key.pub" (Join-Path $outdir "id_ed25519.pub")   -ErrorAction Stop
+      }
       Write-Host "$T_EXPORTED $outdir"
-    } else {
-      Copy-Item "$key"     (Join-Path $outdir "id_ed25519")
-      Copy-Item "$key.pub" (Join-Path $outdir "id_ed25519.pub")
-      Write-Host "$T_EXPORTED $outdir"
+    } catch {
+      Write-Host "Export failed: $($_.Exception.Message)"
     }
-    Open-ExportFolder -Path $outdir
   }
   Remove-Item $tmp -Recurse -Force
   Write-Host $T_DONE
@@ -251,11 +266,14 @@ function Derive-Public {
     Write-Host $pub
     $ans = Read-Host $T_EXPORT
     if ($ans -match '^[Yy]') {
-      $outdir = Get-DownloadsPath
-      Copy-Item $tmp (Join-Path $outdir "derived_private")
-      Set-Content -Path (Join-Path $outdir "derived_public.pub") -Value $pub -NoNewline
-      Write-Host "$T_EXPORTED $outdir"
-      Open-ExportFolder -Path $outdir
+      $outdir = Get-ExportDir
+      try {
+        Copy-Item $tmp (Join-Path $outdir "derived_private") -ErrorAction Stop
+        Set-Content -Path (Join-Path $outdir "derived_public.pub") -Value $pub -NoNewline -ErrorAction Stop
+        Write-Host "$T_EXPORTED $outdir"
+      } catch {
+        Write-Host "Export failed: $($_.Exception.Message)"
+      }
     }
     Write-Host $T_DONE
     Pause-Enter
