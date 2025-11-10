@@ -43,11 +43,6 @@ function Get-ExportDir {
   return $dir
 }
 
-function Open-ExportFolder {
-  param([Parameter(Mandatory)][string]$Path)
-  try { if (Test-Path $Path) { Start-Process -FilePath "explorer.exe" -ArgumentList "`"$Path`"" } } catch {}
-}
-
 # 用 cmd /c 调用 ssh-keygen，确保 -N "" 真为空串；避免 Win 版误判
 function Invoke-SSHKeygen {
   param(
@@ -235,7 +230,6 @@ function Generate-Key {
         Copy-Item "$key.pub" (Join-Path $outdir "id_ed25519.pub")   -ErrorAction Stop
       }
       Write-Host "$T_EXPORTED $outdir"
-      Open-ExportFolder -Path $outdir   # <<< 新增：导出后自动打开文件夹
     } catch {
       Write-Host "Export failed: $($_.Exception.Message)"
     }
@@ -277,7 +271,6 @@ function Derive-Public {
         Copy-Item $tmp (Join-Path $outdir "derived_private") -ErrorAction Stop
         Set-Content -Path (Join-Path $outdir "derived_public.pub") -Value $pub -NoNewline -ErrorAction Stop
         Write-Host "$T_EXPORTED $outdir"
-        Open-ExportFolder -Path $outdir   # <<< 新增：导出后自动打开文件夹
       } catch {
         Write-Host "Export failed: $($_.Exception.Message)"
       }
