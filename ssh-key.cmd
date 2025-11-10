@@ -22,7 +22,7 @@ set TS=%TS: =0%
 
 :: ---- i18n (en / zh-CN / zh-TW / fr / ru / fa / ja) ----------------------
 set LANG=zh-CN
-echo Choose language / 选择语言 / 選擇語言 / Choisir la langue / Выбрать язык / انتخاب زبان / 言語を選択:
+echo Hello:
 echo   1^) English
 echo   2^) 简体中文
 echo   3^) 繁體中文
